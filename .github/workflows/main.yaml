@@ -1,31 +1,43 @@
-name: Mixed inputs
-
+# This will contain all the needed files related to ci
 on:
   workflow_dispatch:
     inputs:
-      name:
-        type: choice
-        description: Who to greet
-        options: 
-        - monalisa
-        - cschleiden
-      message:
-        required: true
-      use-emoji:
-        type: boolean
-        description: Include  emojis
-      environment:
-        type: environment
-        options:
-        - dev
-        - prod
-
+      DockerCommand:
+        type: string
+        default: 'build'
+      DockerImageTag:
+        type: string
+        default: "$(Build.BuildId)"
+      DockerFilePath:
+        type: string
+        default: "$(build.artifactstagingdirectory)/"
+      DockerImageName:
+        type: string
+        default: "$(Build.DefinitionName)"
+      DockerArtifactoryConnection:
+        type: string
+        default: 'Artifactory-Connection'
+      DockerTargetRepo:
+        type: string
+        default: 'catdig-docker'
+ 
+## Build a docker image ##  
 jobs:
-  greet:
+  push:
+    name: Build Docker Image
     runs-on: ubuntu-latest
 
     steps:
-    - name: Send greeting
-      run: echo "${{ github.event.inputs.message }} ${{ fromJSON('["", ""]')[github.event.inputs.use-emoji == 'true'] }} ${{ github.event.inputs.name }}"
+      - name: Checkout
+        uses: actions/checkout@v3
 
+      - run: |
+          echo 'Convert Builddefination to LowerCase'
+          echo "ImageName=$(echo "${{ inputs.DockerImageName }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV 
+          echo "ImageName = $ImageName"       
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
